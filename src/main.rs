@@ -63,7 +63,7 @@ impl<'a> Lexer<'a> {
         None
     }
 
-    fn number(&mut self) -> i32 {
+    fn number(&mut self) -> Token {
         let mut num = String::new();
         while let Some(&ch) = self.chars.peek() {
             if ch.is_numeric() {
