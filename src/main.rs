@@ -77,4 +77,84 @@ impl<'a> Lexer<'a> {
     }
 }
 
+#[derive(Debug)]
+enum AST {
+    Num(i32),
+    BinOp(Box<AST>, Token, Box<AST>),
+}
+
+struct Parser<'a> {
+    tokens: Peekable<Box<dyn Iterator<Item = Token> + 'a>>,
+}
+
+impl<'a> Parser<'a> {
+    fn new(tokens: Box<dyn Iterator<Item = Token> + 'a>) -> Self {
+        Parser {
+            tokens: tokens.peekable(),
+        }
+    }
+
+    fn parse(&mut self) -> AST {
+        self.expr()
+    }
+
+    fn expr(&mut self) -> AST {
+        let mut node = self.term();
+
+        while let Some(&token) = self.tokens.peek() {
+            if token == Token::PLUS || token == Token::MINUS {
+                let op = self.tokens.next().unwrap();
+                let right = self.term();
+                node = AST::BinOp(Box::new(node), op, Box::new(right));
+            } else {
+                break;
+            }
+        }
+        node
+    }
+
+    fn term(&mut self) -> AST {
+        let mut node = self.factor();
+
+        while let Some(&token) = self.tokens.peek() {
+            if token == Token::MULTIPLY || token == Token::DIVIDE {
+                let op = self.tokens.next().unwrap();
+                let right = self.factor();
+                node = AST::BinOp(Box::new(node), op, Box::new(right));
+            } else {
+                break;
+            }
+        }
+        node
+    }
+
+    fn factor(&mut self) -> AST {
+        match self.tokens.next() {
+            Some(Token::NUMBER(n)) => AST::Num(n),
+            Some(Token::LEFT_PAREN) => {
+                let node = self.expr();
+                if self.tokens.next() != Some(Token::RIGHT_PAREN) {
+                    eprintln!("Expected closing parenthesis");
+                    std::process::exit(65);
+                }
+                node
+            }
+            _ => {
+                eprintln!("Unexpected token");
+                std::process::exit(65);
+            }
+        }
+    }
+}
+
+fn evaluate(ast: &AST) -> i32 {
+    match ast {
+        AST::Num(n) => *n,
+        AST::BinOp(left, Token::PLUS, right) => evaluate(left) + evaluate(right),
+        AST::BinOp(left, Token::MINUS, right) => evaluate(left) - evaluate(right),
+        AST::BinOp(left, Token::MULTIPLY, right) => evaluate(left) * evaluate(right),
+        AST::BinOp(left, Token::DIVIDE, right) => evaluate(left) / evaluate(right),
+        _ => panic!("Unknown operation"),
+    }
+}
 fn main() {}
