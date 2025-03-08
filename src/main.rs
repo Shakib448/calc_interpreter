@@ -1,7 +1,8 @@
 use std::iter::Peekable;
 use std::str::Chars;
 
-#[derive(Debug, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Token {
     NUMBER(i32),
     PLUS,
@@ -157,4 +158,16 @@ fn evaluate(ast: &AST) -> i32 {
         _ => panic!("Unknown operation"),
     }
 }
-fn main() {}
+fn main() {
+    let input = "3 + 5 * (10 - 2) / 2 * 2 * 10";
+
+    let mut lexer = Lexer::new(input);
+    let tokens: Vec<Token> = std::iter::from_fn(|| lexer.next_token()).collect();
+
+    let mut parser = Parser::new(Box::new(tokens.into_iter()));
+    let ast = parser.parse();
+
+    let result = evaluate(&ast);
+    println!("AST: {:#?}", ast);
+    println!("Result: {}", result);
+}
